@@ -1,0 +1,241 @@
+@import '@fontsource/league-spartan/400.css';
+@import '@fontsource/league-spartan/500.css';
+@import '@fontsource/league-spartan/600.css';
+@import '@fontsource/league-spartan/700.css';
+@import '@fontsource/league-spartan/800.css';
+@import '@fontsource/league-spartan/900.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/600.css';
+@import '@fontsource/jetbrains-mono/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #fdf8f3;
+  --bg-secondary: #f5f0eb;
+  --bg-dark: #0a0a0f;
+  --bg-card: #111118;
+  --accent-rose: #e4a4bd;
+  --accent-green: #22c55e;
+  --accent-red: #ef4444;
+  --text-dark: #262626;
+  --text-light: #f8fafc;
+  --text-muted: rgba(38, 38, 38, 0.7);
+  --border-light: rgba(38, 38, 38, 0.08);
+  --border-dark: rgba(255, 255, 255, 0.08);
+}
+
+:root {
+  --bg-primary: #fdf8f3;
+  --bg-secondary: #f5f0eb;
+  --bg-dark: #0a0a0f;
+  --bg-card: #111118;
+  --accent-rose: #e4a4bd;
+  --accent-green: #22c55e;
+  --accent-red: #ef4444;
+  --text-dark: #262626;
+  --text-light: #f8fafc;
+  --text-muted: rgba(38, 38, 38, 0.7);
+  --border-light: rgba(38, 38, 38, 0.08);
+  --border-dark: rgba(255, 255, 255, 0.08);
+}
+
+:root {
+  --bg-primary: #fdf8f3;
+  --bg-secondary: #f5f0eb;
+  --bg-dark: #0a0a0f;
+  --bg-card: #111118;
+  --accent-rose: #e4a4bd;
+  --accent-green: #22c55e;
+  --accent-red: #ef4444;
+  --text-dark: #262626;
+  --text-light: #f8fafc;
+  --text-muted: rgba(38, 38, 38, 0.7);
+  --border-light: rgba(38, 38, 38, 0.08);
+  --border-dark: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  font-family: 'League Spartan', sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.glass-card {
+  background: rgba(253, 248, 243, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
+  padding: 40px;
+}
+
+.glass-card-dark {
+  background: rgba(17, 17, 24, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-dark);
+  border-radius: 24px;
+  padding: 40px;
+}
+
+.pill-button {
+  background: var(--accent-rose);
+  color: var(--text-dark);
+  font-weight: 900;
+  padding: 12px 32px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pill-button:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(228, 164, 189, 0.4);
+}
+
+.ghost-button {
+  background: transparent;
+  border: 1px solid var(--accent-rose);
+  color: var(--text-dark);
+  font-weight: 900;
+  padding: 12px 32px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ghost-button:hover {
+  background: var(--accent-rose);
+  transform: scale(1.02);
+}
+
+.utility-label {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+}
+
+input, textarea, select {
+  font-family: 'League Spartan', sans-serif;
+}
+
+.image-grayscale {
+  filter: grayscale(100%);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.image-grayscale:hover {
+  filter: grayscale(0%);
+  transform: scale(1.08);
+}
+
+.plot-available {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1.5px solid var(--accent-green);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.plot-available:hover {
+  background: rgba(34, 197, 94, 0.3);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+  transform: scale(1.05);
+}
+
+.plot-booked {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1.5px solid var(--accent-red);
+  cursor: not-allowed;
+}
+
+.reveal-up {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(-5%); }
+  50% { transform: translateY(5%); }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 4s ease-in-out infinite;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: var(--accent-rose);
+}
+
+input, textarea {
+  background: var(--bg-primary);
+  border: 1px solid rgba(38, 38, 38, 0.12);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 16px;
+  color: var(--text-dark);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+input:focus, textarea:focus {
+  border-color: var(--accent-rose);
+  box-shadow: 0 0 0 3px rgba(228, 164, 189, 0.2);
+}
+
+.dark-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-light);
+}
+
+.dark-input:focus {
+  border-color: var(--accent-rose);
+  box-shadow: 0 0 0 3px rgba(228, 164, 189, 0.2);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-rose);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c98fa3;
+}
