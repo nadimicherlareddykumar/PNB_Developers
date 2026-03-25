@@ -68,9 +68,6 @@ cd server
 npm run seed
 ```
 
-## 🔐 Credentials (Demo)
-*   **Email**: `agent@pnddevelopers.com`
-*   **Password**: `demo1234`
 
-## ⚖️ License
-Distributed under the MIT License.
+
+
