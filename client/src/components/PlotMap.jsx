@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 export function PlotMap({ plots, onPlotClick, isEditor = false, onEmptyCellClick, onPlotDelete }) {
-  if (!plots || plots.length === 0) {
+  if (!isEditor && (!plots || plots.length === 0)) {
     return (
       <div className="glass-card p-12 text-center">
         <p className="text-text-muted">No plots available in this layout.</p>
@@ -9,13 +9,18 @@ export function PlotMap({ plots, onPlotClick, isEditor = false, onEmptyCellClick
     );
   }
 
-  const maxX = Math.max(...plots.map(p => p.grid_x + (p.grid_w || 1)));
-  const maxY = Math.max(...plots.map(p => p.grid_y + (p.grid_h || 1)));
+  let gridCols = 10;
+  let gridRows = 10;
 
-  const gridCols = maxX;
-  const gridRows = maxY;
+  if (plots && plots.length > 0) {
+    const maxX = Math.max(...plots.map(p => p.grid_x + (p.grid_w || 1)));
+    const maxY = Math.max(...plots.map(p => p.grid_y + (p.grid_h || 1)));
+    gridCols = isEditor ? Math.max(10, maxX + 2) : maxX;
+    gridRows = isEditor ? Math.max(10, maxY + 2) : maxY;
+  }
 
   const getPlotAtPosition = (x, y) => {
+    if (!plots) return undefined;
     return plots.find(plot => 
       x >= plot.grid_x && x < plot.grid_x + (plot.grid_w || 1) &&
       y >= plot.grid_y && y < plot.grid_y + (plot.grid_h || 1)

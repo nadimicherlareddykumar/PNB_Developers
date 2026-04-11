@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import { motion } from 'framer-motion';
 import TubesBackground from '../../components/TubesBackground';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -28,70 +29,127 @@ export function Login() {
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.2 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { 
+      y: 0, 
+      opacity: 1, 
+      transition: { type: 'spring', stiffness: 100, damping: 12 }
+    }
+  };
+
   return (
-    <div className="h-screen">
-      <TubesBackground>
-        <div className="h-full flex items-center justify-center p-8">
-          <div className="glass-card-dark max-w-md w-full">
-            <div className="flex flex-col items-center mb-8">
-              <div className="w-20 h-20 rounded-full bg-accent-rose flex items-center justify-center mb-4">
-                <span className="text-2xl font-black text-text-dark">PND</span>
+    <div className="min-h-screen bg-bg-dark flex flex-col md:flex-row font-spartan">
+      {/* Left Panel - Visual Showcase */}
+      <div className="relative w-full h-[40vh] md:h-screen md:w-1/2 lg:w-[55%] overflow-hidden">
+        <TubesBackground>
+          <div className="absolute inset-0 flex flex-col justify-end p-12 bg-gradient-to-t from-bg-dark/80 via-transparent to-transparent z-10 pointer-events-none">
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1, delay: 0.5 }}
+            >
+              <h2 className="text-4xl md:text-6xl font-bold text-text-light mb-4 uppercase tracking-tighter">
+                Redefining <br/>Real Estate
+              </h2>
+              <p className="text-text-muted font-mono text-sm max-w-md">
+                Empowering agents with state-of-the-art tools and dynamic insights to conquer the modern property market.
+              </p>
+            </motion.div>
+          </div>
+        </TubesBackground>
+      </div>
+
+      {/* Right Panel - Login Form */}
+      <div className="w-full h-[60vh] md:h-screen md:w-1/2 lg:w-[45%] flex items-center justify-center p-8 relative overflow-hidden bg-bg-dark">
+        {/* Subtle background glow effect on the right side */}
+        <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-accent-rose opacity-5 blur-[120px] rounded-full pointer-events-none" />
+
+        <div className="glass-card-dark w-full max-w-md relative z-10 p-10 md:p-12 border-border-dark/50 shadow-2xl">
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="flex flex-col"
+          >
+            {/* Header */}
+            <motion.div variants={itemVariants} className="flex flex-col items-center mb-10">
+              <div className="w-16 h-16 rounded-2xl bg-accent-rose/10 flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(228,164,189,0.15)] outline outline-1 outline-accent-rose/20 text-accent-rose">
+                <span className="text-2xl font-black tracking-tighter">PND</span>
               </div>
-              <h1 className="text-2xl font-bold uppercase tracking-tight text-text-light">
+              <h1 className="text-3xl font-bold uppercase tracking-tight text-text-light text-center">
                 Agent Portal
               </h1>
-              <span className="utility-label text-accent-rose mt-2">PND DEVELOPERS</span>
-            </div>
+              <span className="utility-label text-accent-rose mt-3 block text-center">
+                Secure Access
+              </span>
+            </motion.div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-[900] tracking-[0.2em] uppercase text-text-muted mb-2">
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <motion.div variants={itemVariants}>
+                <label className="block text-[11px] font-[800] tracking-[0.2em] uppercase text-text-muted mb-2.5">
                   Email
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="dark-input w-full"
+                  className="dark-input w-full bg-black/20 focus:bg-black/40 hover:bg-black/30 transition-colors"
                   placeholder="agent@pnddevelopers.com"
                   required
                 />
-              </div>
+              </motion.div>
 
-              <div>
-                <label className="block text-[10px] font-[900] tracking-[0.2em] uppercase text-text-muted mb-2">
+              <motion.div variants={itemVariants}>
+                <label className="block text-[11px] font-[800] tracking-[0.2em] uppercase text-text-muted mb-2.5">
                   Password
                 </label>
-                <div className="relative">
+                <div className="relative group">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="dark-input w-full pr-12"
+                    className="dark-input w-full pr-12 bg-black/20 focus:bg-black/40 hover:bg-black/30 transition-colors"
                     placeholder="Enter password"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-light"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-accent-rose transition-colors"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-              </div>
+              </motion.div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="pill-button w-full mt-6 disabled:opacity-50"
-              >
-                {isLoading ? 'Signing in...' : 'Sign In →'}
-              </button>
+              <motion.div variants={itemVariants} className="pt-4">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  disabled={isLoading}
+                  className="pill-button w-full relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="relative z-10">
+                    {isLoading ? 'Authenticating...' : 'Sign In →'}
+                  </span>
+                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out" />
+                </motion.button>
+              </motion.div>
             </form>
-          </div>
+          </motion.div>
         </div>
-      </TubesBackground>
+      </div>
       <Toast message={toast.message} type={toast.type} isVisible={toast.visible} onClose={hideToast} />
     </div>
   );

@@ -114,9 +114,9 @@ export function Layouts() {
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 50 }}
-                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg z-50"
+                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg z-50 px-4 flex flex-col max-h-[95vh]"
               >
-                <div className="glass-card-dark mx-4 p-8 relative">
+                <div className="glass-card-dark w-full p-8 relative overflow-y-auto shadow-2xl">
                   <button
                     onClick={() => setIsModalOpen(false)}
                     className="absolute top-4 right-4 text-text-light hover:text-accent-rose"
@@ -174,7 +174,7 @@ export function Layouts() {
                         Cover Image URL
                       </label>
                       <input
-                        type="url"
+                        type="text"
                         value={formData.cover_image}
                         onChange={(e) => setFormData({ ...formData, cover_image: e.target.value })}
                         className="dark-input w-full"
