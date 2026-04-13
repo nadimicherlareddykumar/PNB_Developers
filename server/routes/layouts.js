@@ -10,7 +10,10 @@ router.get('/', (req, res) => {
       SELECT 
         l.*,
         (SELECT COUNT(*) FROM plots WHERE layout_id = l.id AND status = 'available') as available_count,
-        (SELECT COUNT(*) FROM plots WHERE layout_id = l.id AND status = 'booked') as booked_count
+        (SELECT COUNT(*) FROM plots WHERE layout_id = l.id AND status = 'booked') as booked_count,
+        (SELECT MIN(price) FROM plots WHERE layout_id = l.id AND price IS NOT NULL) as starting_price,
+        (SELECT MIN(size_sqft) FROM plots WHERE layout_id = l.id AND size_sqft IS NOT NULL) as min_size,
+        (SELECT MAX(size_sqft) FROM plots WHERE layout_id = l.id AND size_sqft IS NOT NULL) as max_size
       FROM layouts l
       ORDER BY l.created_at DESC
     `).all();

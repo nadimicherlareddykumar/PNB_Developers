@@ -51,6 +51,7 @@ const createTables = () => {
       layout_id INTEGER REFERENCES layouts(id),
       plot_id INTEGER REFERENCES plots(id),
       customer_name TEXT NOT NULL,
+      customer_email TEXT DEFAULT '',
       customer_phone TEXT NOT NULL,
       visit_date TEXT NOT NULL,
       status TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
@@ -60,5 +61,11 @@ const createTables = () => {
 };
 
 createTables();
+
+try {
+  db.prepare('ALTER TABLE bookings ADD COLUMN customer_email TEXT DEFAULT ""').run();
+} catch (e) {
+  // Column already exists
+}
 
 export default db;

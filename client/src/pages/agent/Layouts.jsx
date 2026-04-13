@@ -57,6 +57,18 @@ export function Layouts() {
     navigate(`/agent/layouts/${layout.id}/editor`);
   };
 
+  const handleDeleteLayout = async (layout) => {
+    const confirmDelete = window.confirm(`Are you sure you want to delete layout "${layout.name}"?`);
+    if (!confirmDelete) return;
+
+    try {
+      await remove(layout.id);
+      showToast('Layout deleted successfully', 'success');
+    } catch (error) {
+      showToast(error.response?.data?.error || 'Failed to delete layout', 'error');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-bg-dark">
       <Sidebar />
@@ -79,6 +91,7 @@ export function Layouts() {
                 variant="dark"
                 onEdit={handleOpenModal}
                 onEditor={handleEditor}
+                onDelete={handleDeleteLayout}
               />
             </motion.div>
           ))}
@@ -110,12 +123,13 @@ export function Layouts() {
                 className="fixed inset-0 bg-[rgba(10,10,15,0.7)] backdrop-blur-sm z-50"
                 onClick={() => setIsModalOpen(false)}
               />
-              <motion.div
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 50 }}
-                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg z-50 px-4 flex flex-col max-h-[95vh]"
-              >
+              <div className="fixed inset-0 z-50 flex items-center justify-center px-4 pointer-events-none">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                  className="w-full max-w-lg pointer-events-auto flex flex-col max-h-[95vh]"
+                >
                 <div className="glass-card-dark w-full p-8 relative overflow-y-auto shadow-2xl">
                   <button
                     onClick={() => setIsModalOpen(false)}
@@ -192,6 +206,7 @@ export function Layouts() {
                   </form>
                 </div>
               </motion.div>
+              </div>
             </>
           )}
         </AnimatePresence>

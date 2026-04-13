@@ -14,9 +14,22 @@ export function Footer() {
           <p className="text-text-muted text-sm leading-relaxed mb-6 max-w-sm">
             Discover curated layouts across prime locations. Every plot, personally verified by PND Developers. We help you find your perfect investment in premium real estate.
           </p>
-          <a href="tel:+919999999999" className="text-accent-rose font-medium">
-            +91 99999 99999
-          </a>
+          <div className="space-y-3">
+            <p className="text-sm text-text-muted flex gap-2">
+              <span className="text-accent-rose font-bold">📍</span> 123 Prime Estate Blvd, Koramangala 5th Block, Bengaluru, Karnataka 560095
+            </p>
+            <p className="text-sm text-text-muted flex gap-2 items-center">
+              <span className="text-accent-rose font-bold">📞</span> 
+              <a href="tel:+919876543210" className="hover:text-accent-rose transition-colors">+91 98765 43210</a>
+            </p>
+            <p className="text-sm text-text-muted flex gap-2 items-center">
+              <span className="text-accent-rose font-bold">✉️</span> 
+              <a href="mailto:info@pnddevelopers.com" className="hover:text-accent-rose transition-colors">info@pnddevelopers.com</a>
+            </p>
+            <p className="text-sm text-text-muted flex gap-2">
+              <span className="text-accent-rose font-bold">🕒</span> Open Daily: 9:00 AM - 6:00 PM
+            </p>
+          </div>
         </div>
 
         <div className="col-span-4 md:col-span-2">
@@ -32,9 +45,9 @@ export function Footer() {
         <div className="col-span-4 md:col-span-2">
           <h4 className="utility-label text-accent-rose mb-6 underline underline-offset-8">Connect</h4>
           <ul className="space-y-3">
-            <li><a href="#" className="text-sm text-text-muted hover:text-accent-rose transition-colors">Instagram</a></li>
-            <li><a href="#" className="text-sm text-text-muted hover:text-accent-rose transition-colors">Facebook</a></li>
-            <li><a href="#" className="text-sm text-text-muted hover:text-accent-rose transition-colors">WhatsApp</a></li>
+            <li><a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-sm text-text-muted hover:text-accent-rose transition-colors">Instagram</a></li>
+            <li><a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-sm text-text-muted hover:text-accent-rose transition-colors">Facebook</a></li>
+            <li><a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" className="text-sm text-text-muted hover:text-accent-rose transition-colors">WhatsApp</a></li>
             <li><a href="mailto:info@pnddevelopers.com" className="text-sm text-text-muted hover:text-accent-rose transition-colors">Email</a></li>
           </ul>
         </div>

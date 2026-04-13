@@ -1,33 +1,15 @@
 import express from 'express';
 import db from '../db/database.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
+import { sendApprovalEmail } from '../utils/email.js';
 
 const router = express.Router();
 
-const sendSMS = async (to, message) => {
-  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
-    try {
-      const twilio = await import('twilio');
-      const client = twilio.default(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-      await client.messages.create({
-        body: message,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: to
-      });
-      console.log('SMS sent to:', to);
-    } catch (error) {
-      console.error('Twilio SMS error:', error.message);
-    }
-  } else {
-    console.log('SMS (mock):', message);
-  }
-};
-
 router.post('/', (req, res) => {
   try {
-    const { layout_id, plot_id, customer_name, customer_phone, visit_date } = req.body;
+    const { layout_id, plot_id, customer_name, customer_email, customer_phone, visit_date } = req.body;
 
-    if (!layout_id || !plot_id || !customer_name || !customer_phone || !visit_date) {
+    if (!layout_id || !plot_id || !customer_name || !customer_email || !customer_phone || !visit_date) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
@@ -37,9 +19,9 @@ router.post('/', (req, res) => {
     }
 
     const result = db.prepare(`
-      INSERT INTO bookings (layout_id, plot_id, customer_name, customer_phone, visit_date)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(layout_id, plot_id, customer_name, customer_phone, visit_date);
+      INSERT INTO bookings (layout_id, plot_id, customer_name, customer_email, customer_phone, visit_date)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(layout_id, plot_id, customer_name, customer_email, customer_phone, visit_date);
 
     const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(result.lastInsertRowid);
 
@@ -109,8 +91,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
       // Mark the plot as booked once the visit request is approved.
       db.prepare('UPDATE plots SET status = ? WHERE id = ?').run('booked', booking.plot_id);
 
-      const message = `Hi ${booking.customer_name}, your site visit for Plot ${booking.plot_number} at ${booking.layout_name}, ${booking.location} on ${booking.visit_date} is confirmed. – PND Developers. Call us: +91XXXXXXXXXX`;
-      await sendSMS(booking.customer_phone, message);
+      await sendApprovalEmail(booking, booking.plot_number, booking.layout_name, booking.location);
     }
 
     const updatedBooking = db.prepare(`

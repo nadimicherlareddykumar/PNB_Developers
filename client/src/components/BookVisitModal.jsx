@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CheckCircle, Calendar, User, Phone } from 'lucide-react';
+import { X, CheckCircle, Calendar, User, Phone, Mail } from 'lucide-react';
 import { createBooking } from '../api/bookings';
 
 export function BookVisitModal({ isOpen, onClose, plot, layout }) {
   const [formData, setFormData] = useState({
     customer_name: '',
+    customer_email: '',
     customer_phone: '',
     visit_date: ''
   });
@@ -29,11 +30,7 @@ export function BookVisitModal({ isOpen, onClose, plot, layout }) {
         ...formData
       });
       setIsSuccess(true);
-      setTimeout(() => {
-        onClose();
-        setIsSuccess(false);
-        setFormData({ customer_name: '', customer_phone: '', visit_date: '' });
-      }, 3000);
+      setFormData({ customer_name: '', customer_email: '', customer_phone: '', visit_date: '' });
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to submit request');
     } finally {
@@ -52,13 +49,14 @@ export function BookVisitModal({ isOpen, onClose, plot, layout }) {
             className="fixed inset-0 bg-[rgba(10,10,15,0.7)] backdrop-blur-sm z-50"
             onClick={onClose}
           />
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md z-50 px-4 flex flex-col max-h-[95vh]"
-          >
-            <div className="glass-card-dark w-full p-8 relative overflow-y-auto shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-md pointer-events-auto"
+            >
+            <div className="glass-card-dark w-full p-8 relative shadow-2xl max-h-[85vh] overflow-y-auto">
               <button
                 onClick={onClose}
                 className="absolute top-4 right-4 text-text-light hover:text-accent-rose transition-colors"
@@ -98,6 +96,23 @@ export function BookVisitModal({ isOpen, onClose, plot, layout }) {
 
                     <div>
                       <label className="block text-[10px] font-[900] tracking-[0.2em] uppercase text-text-muted mb-2">
+                        Email Address
+                      </label>
+                      <div className="relative">
+                        <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                        <input
+                          type="email"
+                          required
+                          value={formData.customer_email}
+                          onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
+                          className="dark-input w-full pl-12"
+                          placeholder="your.email@domain.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-[900] tracking-[0.2em] uppercase text-text-muted mb-2">
                         Phone Number
                       </label>
                       <div className="relative">
@@ -107,7 +122,7 @@ export function BookVisitModal({ isOpen, onClose, plot, layout }) {
                           type="tel"
                           required
                           value={formData.customer_phone}
-                          onChange={(e) => setFormData({ ...formData, customer_phone: '+91' + e.target.value.replace(/\D/g, '').slice(-10)})}
+                          onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value.replace(/\D/g, '').slice(0, 10)})}
                           className="dark-input w-full pl-20"
                           placeholder="99999 99999"
                           maxLength={13}
@@ -158,10 +173,20 @@ export function BookVisitModal({ isOpen, onClose, plot, layout }) {
                   <p className="text-text-muted">
                     Our agent will confirm your visit shortly.
                   </p>
+                  <button
+                    onClick={() => {
+                      onClose();
+                      setIsSuccess(false);
+                    }}
+                    className="mt-8 pill-button w-full"
+                  >
+                    Close Dialog
+                  </button>
                 </motion.div>
               )}
             </div>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

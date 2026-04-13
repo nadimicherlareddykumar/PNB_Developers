@@ -128,12 +128,22 @@ export default function Bookings() {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="text-text-light font-bold">{booking.customer_name}</p>
-                        <a
-                          href={`tel:${booking.customer_phone}`}
-                          className="text-accent-rose text-sm block mt-1"
-                        >
-                          {booking.customer_phone}
-                        </a>
+                        <div className="flex flex-col gap-1 mt-1">
+                          <a
+                            href={`tel:${booking.customer_phone}`}
+                            className="text-accent-rose text-sm inline-block"
+                          >
+                            {booking.customer_phone}
+                          </a>
+                          {booking.customer_email && (
+                            <a
+                              href={`mailto:${booking.customer_email}`}
+                              className="text-text-muted text-xs inline-block hover:text-text-light transition-colors"
+                            >
+                              {booking.customer_email}
+                            </a>
+                          )}
+                        </div>
                       </div>
                       <StatusBadge status={booking.status} />
                     </div>
@@ -172,7 +182,7 @@ export default function Bookings() {
                             onClick={async () => {
                               try {
                                 await approve(booking.id);
-                                showToast(`✓ Approved! SMS sent to ${booking.customer_name}`, 'success');
+                                showToast(`✓ Approved! Email dispatched.`, 'success');
                               } catch (e) {
                                 showToast(e?.response?.data?.error || 'Approval failed', 'error');
                               }

@@ -280,7 +280,11 @@ export default function LayoutEditor() {
                       </p>
                     </div>
                     {selectedPlot && (
-                      <div className="hidden sm:block text-text-muted">
+                      <div 
+                        className="hidden sm:block text-text-muted cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => handleDeletePlot(selectedPlot)}
+                        title="Delete Plot"
+                      >
                         <Trash2 size={18} className="text-accent-red" />
                       </div>
                     )}

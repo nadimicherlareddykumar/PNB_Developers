@@ -39,14 +39,13 @@ export function Navbar() {
               {link.name}
             </Link>
           ))}
+          <a
+            href="tel:+919999999999"
+            className="px-6 py-2 border border-accent-rose text-accent-rose hover:bg-accent-rose hover:text-white transition-colors text-[10px] font-[900] tracking-[0.2em] uppercase rounded-full"
+          >
+            Call Now
+          </a>
         </div>
-
-        <Link
-          to="/#layouts"
-          className="hidden md:block pill-button"
-        >
-          Book A Visit
-        </Link>
 
         <button
           type="button"
@@ -63,24 +62,23 @@ export function Navbar() {
 
       {isOpen && (
         <div className="fixed inset-0 bg-bg-primary z-60 md:hidden">
-          <div className="flex flex-col items-center justify-center gap-8">
+          <div className="flex flex-col items-center justify-center h-full gap-8">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
                 onClick={() => setIsOpen(false)}
-                className="text-[10px] font-[900] uppercase tracking-[0.2em] text-text-dark"
+                className="text-lg font-[900] uppercase tracking-[0.2em] text-text-dark"
               >
                 {link.name}
               </Link>
             ))}
-            <Link
-              to="/#layouts"
-              onClick={() => setIsOpen(false)}
-              className="pill-button"
+            <a
+              href="tel:+919999999999"
+              className="mt-4 px-8 py-3 bg-accent-rose text-white text-[12px] font-[900] tracking-[0.2em] uppercase rounded-full"
             >
-              Book A Visit
-            </Link>
+              Call Now
+            </a>
           </div>
         </div>
       )}
