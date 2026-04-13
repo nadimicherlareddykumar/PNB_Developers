@@ -6,6 +6,7 @@ import path from 'path';
 
 dotenv.config();
 
+import pool from './db/database.js';
 import authRoutes from './routes/auth.js';
 import layoutRoutes from './routes/layouts.js';
 import plotRoutes from './routes/plots.js';
@@ -28,6 +29,12 @@ app.get('/api/health', (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// Wait for DB tables to be ready before accepting traffic
+pool.on('connect', () => {});
+
+// Small delay to let initTables() complete before listening
+setTimeout(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}, 1500);

@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import db from '../db/database.js';
+import { query } from '../db/database.js';
 
 const router = express.Router();
 
@@ -13,7 +13,8 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const agent = db.prepare('SELECT * FROM agents WHERE email = ?').get(email);
+    const result = await query('SELECT * FROM agents WHERE email = $1', [email]);
+    const agent = result.rows[0];
 
     if (!agent) {
       return res.status(401).json({ error: 'Invalid credentials' });
