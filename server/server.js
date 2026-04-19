@@ -82,26 +82,26 @@ app.use((req, res, next) => {
   next();
 });
 
-const getPositiveInt = (value, fallback) => {
+const getValidPositiveInt = (value, fallback) => {
   const parsed = parseInt(value ?? '', 10);
   return Number.isNaN(parsed) || parsed <= 0 ? fallback : parsed;
 };
 
 const environment = process.env.NODE_ENV || 'development';
-const rateLimitWindowMinutes = getPositiveInt(process.env.RATE_LIMIT_WINDOW_MINUTES, 15);
+const rateLimitWindowMinutes = getValidPositiveInt(process.env.RATE_LIMIT_WINDOW_MINUTES, 15);
 const defaultAuthMax = environment === 'production' ? 8 : environment === 'staging' ? 20 : 100;
 const defaultApiMax = environment === 'production' ? 200 : environment === 'staging' ? 500 : 1000;
 
 const authLimiter = rateLimit({
   windowMs: rateLimitWindowMinutes * 60 * 1000,
-  max: getPositiveInt(process.env.RATE_LIMIT_AUTH_MAX, defaultAuthMax),
+  max: getValidPositiveInt(process.env.RATE_LIMIT_AUTH_MAX, defaultAuthMax),
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many authentication attempts. Try again later.' }
 });
 const apiLimiter = rateLimit({
   windowMs: rateLimitWindowMinutes * 60 * 1000,
-  max: getPositiveInt(process.env.RATE_LIMIT_API_MAX, defaultApiMax),
+  max: getValidPositiveInt(process.env.RATE_LIMIT_API_MAX, defaultApiMax),
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests. Try again later.' }
