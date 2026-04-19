@@ -106,7 +106,7 @@ export function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   aria-label="Agent email"
                   className="dark-input w-full bg-black/20 focus:bg-black/40 hover:bg-black/30 transition-colors"
-                  placeholder="agent@pnbdeveloper.com"
+                  placeholder="agent@pnbdevelopers.com"
                   required
                 />
               </motion.div>

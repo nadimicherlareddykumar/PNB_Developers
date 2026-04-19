@@ -51,7 +51,7 @@ export function Sidebar() {
             <span className="font-black text-text-dark">PNB</span>
           </div>
           <div>
-            <p className="text-[10px] text-text-light tracking-[0.2em] font-bold">PNB DEVELOPER</p>
+            <p className="text-[10px] text-text-light tracking-[0.2em] font-bold">PNB DEVELOPERS</p>
             <p className="text-[8px] text-accent-rose tracking-[0.4em]">AGENT PORTAL</p>
           </div>
         </div>

@@ -7,10 +7,10 @@ export default function About() {
         <RevealUp>
           <span className="utility-label text-accent-rose">ABOUT</span>
           <h1 className="text-6xl font-black uppercase tracking-tighter text-text-dark mt-2">
-            PNB DEVELOPER
+            PNB DEVELOPERS
           </h1>
           <p className="text-text-muted mt-6 max-w-3xl leading-relaxed">
-            PNB DEVELOPER curates premium plots and land across prime locations, with a focus on
+            PNB DEVELOPERS curates premium plots and land across prime locations, with a focus on
             clarity, verification, and a smooth buying experience.
           </p>
           <p className="text-text-muted mt-4 max-w-3xl leading-relaxed">

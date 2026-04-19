@@ -24,7 +24,7 @@ export function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 h-20 bg-[rgba(253,248,243,0.8)] backdrop-blur-md border-b border-[rgba(38,38,38,0.05)]">
       <div className="max-w-7xl mx-auto px-8 h-full flex items-center justify-between">
         <Link to="/" className="text-xl font-bold uppercase tracking-[0.2em] text-text-dark">
-          PNB DEVELOPER
+          PNB DEVELOPERS
         </Link>
 
         <div className="hidden md:flex items-center gap-12">
