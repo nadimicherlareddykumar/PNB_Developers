@@ -1,0 +1,39 @@
+name: Deploy Production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      IMAGE_TAG: sha-${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        run: |
+          test -n "${{ secrets.PROD_DEPLOY_HOST }}"
+          test -n "${{ secrets.PROD_DEPLOY_USER }}"
+          test -n "${{ secrets.PROD_DEPLOY_KEY }}"
+
+      - name: Deploy to production host
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_DEPLOY_HOST }}
+          username: ${{ secrets.PROD_DEPLOY_USER }}
+          key: ${{ secrets.PROD_DEPLOY_KEY }}
+          script: |
+            set -e
+            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+            docker pull ghcr.io/${{ github.repository_owner }}/pnb-backend:${{ env.IMAGE_TAG }}
+            docker pull ghcr.io/${{ github.repository_owner }}/pnb-client:${{ env.IMAGE_TAG }}
+            echo "Run production rollout command for your orchestrator here."

@@ -14,6 +14,7 @@ import authRoutes from './routes/auth.js';
 import layoutRoutes from './routes/layouts.js';
 import plotRoutes from './routes/plots.js';
 import bookingRoutes from './routes/bookings.js';
+import { metricsEndpoint, metricsMiddleware } from './middleware/metrics.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -41,6 +42,7 @@ app.use(
 app.use(helmet());
 app.use(cookieParser());
 app.use(express.json({ limit: '100kb' }));
+app.use(metricsMiddleware);
 
 const csrfProtection = csrf({
   cookie: {
@@ -80,34 +82,51 @@ app.use((req, res, next) => {
   next();
 });
 
+const getPositiveInt = (value, fallback) => {
+  const parsed = parseInt(value ?? '', 10);
+  return Number.isNaN(parsed) || parsed <= 0 ? fallback : parsed;
+};
+
+const environment = process.env.NODE_ENV || 'development';
+const rateLimitWindowMinutes = getPositiveInt(process.env.RATE_LIMIT_WINDOW_MINUTES, 15);
+const defaultAuthMax = environment === 'production' ? 8 : environment === 'staging' ? 20 : 100;
+const defaultApiMax = environment === 'production' ? 200 : environment === 'staging' ? 500 : 1000;
+
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
+  windowMs: rateLimitWindowMinutes * 60 * 1000,
+  max: getPositiveInt(process.env.RATE_LIMIT_AUTH_MAX, defaultAuthMax),
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many authentication attempts. Try again later.' }
 });
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 300,
+  windowMs: rateLimitWindowMinutes * 60 * 1000,
+  max: getPositiveInt(process.env.RATE_LIMIT_API_MAX, defaultApiMax),
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests. Try again later.' }
 });
 
+app.get('/metrics', metricsEndpoint);
+app.get('/api/live', (req, res) => {
+  res.json({ status: 'alive', timestamp: new Date().toISOString() });
+});
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/layouts', apiLimiter, layoutRoutes);
 app.use('/api/plots', apiLimiter, plotRoutes);
 app.use('/api/bookings', apiLimiter, bookingRoutes);
 
-app.get('/api/health', async (req, res, next) => {
+const readinessHandler = async (req, res, next) => {
   try {
     await query('SELECT 1');
     res.json({ status: 'ok', database: 'connected', timestamp: new Date().toISOString() });
   } catch (error) {
     next(error);
   }
-});
+};
+
+app.get('/api/health', readinessHandler);
+app.get('/api/ready', readinessHandler);
 
 app.use((error, req, res, next) => {
   if (error.code === 'EBADCSRFTOKEN') {

@@ -1,0 +1,41 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  IMAGE_TAG: sha-${{ github.sha }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        run: |
+          test -n "${{ secrets.STAGING_DEPLOY_HOST }}"
+          test -n "${{ secrets.STAGING_DEPLOY_USER }}"
+          test -n "${{ secrets.STAGING_DEPLOY_KEY }}"
+
+      - name: Deploy to staging host
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_DEPLOY_HOST }}
+          username: ${{ secrets.STAGING_DEPLOY_USER }}
+          key: ${{ secrets.STAGING_DEPLOY_KEY }}
+          script: |
+            set -e
+            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+            docker pull ghcr.io/${{ github.repository_owner }}/pnb-backend:${{ env.IMAGE_TAG }}
+            docker pull ghcr.io/${{ github.repository_owner }}/pnb-client:${{ env.IMAGE_TAG }}
+            echo "Deploy your staging stack with your orchestrator here (helm/kustomize/compose)."
