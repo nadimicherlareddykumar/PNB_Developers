@@ -17,5 +17,10 @@ export const errorHandler = (error, req, res, next) => {
     return next(error);
   }
 
-  res.status(status).json({ error: status >= 500 ? 'Server error' : error.message });
+  const clientMessage = status >= 500
+    ? 'Server error'
+    : status === 404
+      ? 'Not found'
+      : 'Request failed';
+  res.status(status).json({ error: clientMessage });
 };

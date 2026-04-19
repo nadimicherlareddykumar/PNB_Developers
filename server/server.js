@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
+import csrf from 'csurf';
 
 dotenv.config();
 
@@ -32,7 +33,8 @@ app.use(
       }
       return callback(new Error('CORS not allowed'));
     },
-    credentials: true
+    credentials: true,
+    exposedHeaders: ['x-csrf-token']
   })
 );
 
@@ -40,8 +42,25 @@ app.use(helmet());
 app.use(cookieParser());
 app.use(express.json({ limit: '100kb' }));
 
+const csrfProtection = csrf({
+  cookie: {
+    key: '_csrf',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  }
+});
+app.use(csrfProtection);
 app.use((req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
+  if (req.method === 'GET') {
+    res.set('x-csrf-token', req.csrfToken());
+  }
+  next();
+});
+
+app.use((req, res, next) => {
+  const isSecure = req.secure || req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https';
+  if (process.env.NODE_ENV === 'production' && !isSecure) {
     return res.redirect(301, `https://${req.headers.host}${req.originalUrl}`);
   }
   return next();
@@ -68,11 +87,18 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Too many authentication attempts. Try again later.' }
 });
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Try again later.' }
+});
 
 app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/layouts', layoutRoutes);
-app.use('/api/plots', plotRoutes);
-app.use('/api/bookings', bookingRoutes);
+app.use('/api/layouts', apiLimiter, layoutRoutes);
+app.use('/api/plots', apiLimiter, plotRoutes);
+app.use('/api/bookings', apiLimiter, bookingRoutes);
 
 app.get('/api/health', async (req, res, next) => {
   try {
@@ -81,6 +107,13 @@ app.get('/api/health', async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+app.use((error, req, res, next) => {
+  if (error.code === 'EBADCSRFTOKEN') {
+    return res.status(403).json({ error: 'Invalid CSRF token' });
+  }
+  return next(error);
 });
 
 app.use(notFoundHandler);
