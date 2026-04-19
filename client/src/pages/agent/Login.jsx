@@ -23,7 +23,8 @@ export function Login() {
       await login(email, password);
       navigate('/agent/dashboard');
     } catch (error) {
-      showToast(error.response?.data?.error || 'Invalid credentials', 'error');
+      const errorMsg = error.response?.data?.error || error.message || 'Invalid credentials';
+      showToast(errorMsg, 'error');
     } finally {
       setIsLoading(false);
     }

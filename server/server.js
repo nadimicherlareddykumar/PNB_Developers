@@ -26,18 +26,31 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error('CORS not allowed'));
-    },
-    credentials: true,
-    exposedHeaders: ['x-csrf-token']
-  })
-);
+// Request logging
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    logger.info('HTTP request', {
+      method: req.method,
+      path: req.originalUrl,
+      statusCode: res.statusCode,
+      durationMs: Date.now() - start,
+      ip: req.ip
+    });
+  });
+  next();
+});
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS not allowed'));
+  },
+  credentials: true,
+  exposedHeaders: ['x-csrf-token']
+}));
 
 app.use(helmet());
 app.use(cookieParser());
@@ -52,9 +65,15 @@ const csrfProtection = csrf({
     sameSite: 'lax'
   }
 });
-app.use(csrfProtection);
 app.use((req, res, next) => {
-  if (req.method === 'GET') {
+  const exemptPaths = ['/api/auth/login', '/api/auth/signup', '/api/health', '/api/live'];
+  if (exemptPaths.includes(req.path)) {
+    return next();
+  }
+  return csrfProtection(req, res, next);
+});
+app.use((req, res, next) => {
+  if (req.method === 'GET' && typeof req.csrfToken === 'function') {
     res.set('x-csrf-token', req.csrfToken());
   }
   next();
@@ -68,19 +87,6 @@ app.use((req, res, next) => {
   return next();
 });
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    logger.info('HTTP request', {
-      method: req.method,
-      path: req.originalUrl,
-      statusCode: res.statusCode,
-      durationMs: Date.now() - start,
-      ip: req.ip
-    });
-  });
-  next();
-});
 
 const parsePositiveIntOrDefault = (value, fallback) => {
   const parsed = parseInt(value ?? '', 10);
@@ -144,8 +150,12 @@ pool.on('connect', () => {
   logger.info('Database pool connected');
 });
 
-ready.then(() => {
-  app.listen(PORT, () => {
-    logger.info(`Server running on port ${PORT}`);
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  ready.then(() => {
+    app.listen(PORT, () => {
+      logger.info(`Server running on port ${PORT}`);
+    });
   });
-});
+}
+
+export default app;
