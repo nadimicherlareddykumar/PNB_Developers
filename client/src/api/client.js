@@ -42,7 +42,7 @@ client.interceptors.response.use(
     }
 
     if (error.response?.status === 401 && window.location.pathname.startsWith('/agent')) {
-      localStorage.removeItem('pnd_agent');
+      localStorage.removeItem('pnb_agent');
       window.location.href = '/agent/login';
     }
 

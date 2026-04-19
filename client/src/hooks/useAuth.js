@@ -8,16 +8,16 @@ export function useAuth() {
   useEffect(() => {
     const bootstrapAuth = async () => {
       try {
-        const storedAgent = localStorage.getItem('pnd_agent');
+        const storedAgent = localStorage.getItem('pnb_agent');
         if (storedAgent) {
           setAgent(JSON.parse(storedAgent));
         }
 
         const response = await meApi();
         setAgent(response.agent);
-        localStorage.setItem('pnd_agent', JSON.stringify(response.agent));
+        localStorage.setItem('pnb_agent', JSON.stringify(response.agent));
       } catch {
-        localStorage.removeItem('pnd_agent');
+        localStorage.removeItem('pnb_agent');
         setAgent(null);
       } finally {
         setIsLoading(false);
@@ -29,7 +29,7 @@ export function useAuth() {
 
   const login = async (email, password) => {
     const { agent: authenticatedAgent } = await loginApi(email, password);
-    localStorage.setItem('pnd_agent', JSON.stringify(authenticatedAgent));
+    localStorage.setItem('pnb_agent', JSON.stringify(authenticatedAgent));
     setAgent(authenticatedAgent);
     return authenticatedAgent;
   };
@@ -38,7 +38,7 @@ export function useAuth() {
     try {
       await logoutApi();
     } finally {
-      localStorage.removeItem('pnd_agent');
+      localStorage.removeItem('pnb_agent');
       setAgent(null);
     }
   };

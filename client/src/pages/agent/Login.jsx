@@ -84,7 +84,7 @@ export function Login() {
             {/* Header */}
             <motion.div variants={itemVariants} className="flex flex-col items-center mb-10">
               <div className="w-16 h-16 rounded-2xl bg-accent-rose/10 flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(228,164,189,0.15)] outline outline-1 outline-accent-rose/20 text-accent-rose">
-                <span className="text-2xl font-black tracking-tighter">PND</span>
+                <span className="text-2xl font-black tracking-tighter">PNB</span>
               </div>
               <h1 className="text-3xl font-bold uppercase tracking-tight text-text-light text-center">
                 Agent Portal
@@ -106,7 +106,7 @@ export function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   aria-label="Agent email"
                   className="dark-input w-full bg-black/20 focus:bg-black/40 hover:bg-black/30 transition-colors"
-                  placeholder="agent@pnddevelopers.com"
+                  placeholder="agent@pnbdeveloper.com"
                   required
                 />
               </motion.div>

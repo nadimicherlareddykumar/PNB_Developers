@@ -135,7 +135,7 @@ export function Home() {
       <section className="bg-bg-primary py-24 px-6 md:px-8">
         <div className="max-w-7xl mx-auto">
           <RevealUp className="mb-16 text-center">
-            <span className="utility-label text-accent-rose">THE PND ADVANTAGE</span>
+            <span className="utility-label text-accent-rose">THE PNB ADVANTAGE</span>
             <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-text-dark mt-4">
               WHY INVEST WITH US?
             </h2>
@@ -249,7 +249,7 @@ export function Home() {
             <RevealUp className="p-10 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] rounded-2xl relative">
               <span className="absolute top-6 left-6 text-6xl text-[rgba(255,255,255,0.05)] font-serif">"</span>
               <p className="text-text-light text-lg leading-relaxed relative z-10 italic mb-6">
-                "Investing in the North Bangalore layout was the best decision. The legal team at PND Developers was completely transparent, and the registration process was seamless. I highly recommend them."
+                "Investing in the North Bangalore layout was the best decision. The legal team at PNB DEVELOPER was completely transparent, and the registration process was seamless. I highly recommend them."
               </p>
               <div className="flex items-center gap-2 border-t border-[rgba(255,255,255,0.1)] pt-4">
                 <div className="w-10 h-10 bg-accent-rose text-white rounded-full flex items-center justify-center font-bold">R</div>

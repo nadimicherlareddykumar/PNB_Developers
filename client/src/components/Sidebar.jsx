@@ -18,6 +18,7 @@ export function Sidebar() {
     { path: '/agent/dashboard', label: 'DASHBOARD', icon: LayoutDashboard },
     { path: '/agent/layouts', label: 'MY LAYOUTS', icon: Map },
     { path: '/agent/bookings', label: 'VISIT REQUESTS', icon: Calendar },
+    { path: '/', label: 'VIEW PUBLIC SITE', icon: Grid3X3 },
   ];
 
   return (
@@ -47,10 +48,10 @@ export function Sidebar() {
       <div className="p-6 border-b border-[rgba(255,255,255,0.06)]">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-full bg-accent-rose flex items-center justify-center">
-            <span className="font-black text-text-dark">PND</span>
+            <span className="font-black text-text-dark">PNB</span>
           </div>
           <div>
-            <p className="text-[10px] text-text-light tracking-[0.2em] font-bold">PND DEVELOPERS</p>
+            <p className="text-[10px] text-text-light tracking-[0.2em] font-bold">PNB DEVELOPER</p>
             <p className="text-[8px] text-accent-rose tracking-[0.4em]">AGENT PORTAL</p>
           </div>
         </div>
