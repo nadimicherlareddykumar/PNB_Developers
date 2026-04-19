@@ -1,12 +1,12 @@
 import client from './client';
 
-export const getLayouts = async () => {
-  const response = await client.get('/layouts');
-  return response.data;
+export const getLayouts = async (params = {}) => {
+  const response = await client.get('/layouts', { params });
+  return response.data.items || [];
 };
 
-export const getLayout = async (id) => {
-  const response = await client.get(`/layouts/${id}`);
+export const getLayout = async (id, params = {}) => {
+  const response = await client.get(`/layouts/${id}`, { params });
   return response.data;
 };
 

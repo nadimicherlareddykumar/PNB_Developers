@@ -2,8 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 export function PrivateRoute({ children }) {
-  const { isLoading } = useAuth();
-  const token = localStorage.getItem('pnd_token');
+  const { isLoading, agent } = useAuth();
 
   if (isLoading) {
     return (
@@ -13,9 +12,8 @@ export function PrivateRoute({ children }) {
     );
   }
 
-  if (!token) return <Navigate to="/agent/login" replace />;
+  if (!agent) return <Navigate to="/agent/login" replace />;
   return children;
 }
 
 export default PrivateRoute;
-

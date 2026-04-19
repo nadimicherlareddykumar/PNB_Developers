@@ -1,31 +1,46 @@
 import { useState, useEffect } from 'react';
-import { login as loginApi } from '../api/auth';
+import { login as loginApi, logout as logoutApi, me as meApi } from '../api/auth';
 
 export function useAuth() {
   const [agent, setAgent] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedAgent = localStorage.getItem('pnd_agent');
-    const token = localStorage.getItem('pnd_token');
-    if (storedAgent && token) {
-      setAgent(JSON.parse(storedAgent));
-    }
-    setIsLoading(false);
+    const bootstrapAuth = async () => {
+      try {
+        const storedAgent = localStorage.getItem('pnd_agent');
+        if (storedAgent) {
+          setAgent(JSON.parse(storedAgent));
+        }
+
+        const response = await meApi();
+        setAgent(response.agent);
+        localStorage.setItem('pnd_agent', JSON.stringify(response.agent));
+      } catch {
+        localStorage.removeItem('pnd_agent');
+        setAgent(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    bootstrapAuth();
   }, []);
 
   const login = async (email, password) => {
-    const { token, agent } = await loginApi(email, password);
-    localStorage.setItem('pnd_token', token);
-    localStorage.setItem('pnd_agent', JSON.stringify(agent));
-    setAgent(agent);
-    return agent;
+    const { agent: authenticatedAgent } = await loginApi(email, password);
+    localStorage.setItem('pnd_agent', JSON.stringify(authenticatedAgent));
+    setAgent(authenticatedAgent);
+    return authenticatedAgent;
   };
 
-  const logout = () => {
-    localStorage.removeItem('pnd_token');
-    localStorage.removeItem('pnd_agent');
-    setAgent(null);
+  const logout = async () => {
+    try {
+      await logoutApi();
+    } finally {
+      localStorage.removeItem('pnd_agent');
+      setAgent(null);
+    }
   };
 
   return { agent, login, logout, isLoading };

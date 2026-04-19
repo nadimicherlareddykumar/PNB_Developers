@@ -1,32 +1,56 @@
 import express from 'express';
+import { body, param, query as queryValidator } from 'express-validator';
 import { query } from '../db/database.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
+import { validateRequest } from '../middleware/validateRequest.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { getPagination } from '../utils/pagination.js';
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
-  try {
-    const result = await query(`
-      SELECT 
+router.get(
+  '/',
+  [
+    queryValidator('page').optional().isInt({ min: 1 }),
+    queryValidator('limit').optional().isInt({ min: 1, max: 100 })
+  ],
+  validateRequest,
+  asyncHandler(async (req, res) => {
+    const { page, limit, offset } = getPagination(req.query);
+
+    const result = await query(
+      `SELECT
         l.*,
         (SELECT COUNT(*) FROM plots WHERE layout_id = l.id AND status = 'available') as available_count,
         (SELECT COUNT(*) FROM plots WHERE layout_id = l.id AND status = 'booked') as booked_count,
         (SELECT MIN(price) FROM plots WHERE layout_id = l.id AND price IS NOT NULL) as starting_price,
         (SELECT MIN(size_sqft) FROM plots WHERE layout_id = l.id AND size_sqft IS NOT NULL) as min_size,
-        (SELECT MAX(size_sqft) FROM plots WHERE layout_id = l.id AND size_sqft IS NOT NULL) as max_size
+        (SELECT MAX(size_sqft) FROM plots WHERE layout_id = l.id AND size_sqft IS NOT NULL) as max_size,
+        COUNT(*) OVER()::int AS total_count
       FROM layouts l
       ORDER BY l.created_at DESC
-    `);
+      LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
 
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching layouts:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+    const total = result.rows[0]?.total_count || 0;
+    const items = result.rows.map(({ total_count, ...rest }) => rest);
 
-router.get('/:id', async (req, res) => {
-  try {
+    res.json({ items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 } });
+  })
+);
+
+router.get(
+  '/:id',
+  [
+    param('id').isInt({ min: 1 }),
+    queryValidator('page').optional().isInt({ min: 1 }),
+    queryValidator('limit').optional().isInt({ min: 1, max: 100 })
+  ],
+  validateRequest,
+  asyncHandler(async (req, res) => {
+    const { page, limit, offset } = getPagination(req.query);
+
     const layoutResult = await query('SELECT * FROM layouts WHERE id = $1', [req.params.id]);
     const layout = layoutResult.rows[0];
 
@@ -35,43 +59,59 @@ router.get('/:id', async (req, res) => {
     }
 
     const plotsResult = await query(
-      'SELECT * FROM plots WHERE layout_id = $1 ORDER BY grid_y, grid_x',
-      [req.params.id]
+      `SELECT *, COUNT(*) OVER()::int AS total_count
+       FROM plots
+       WHERE layout_id = $1
+       ORDER BY grid_y, grid_x
+       LIMIT $2 OFFSET $3`,
+      [req.params.id, limit, offset]
     );
 
-    res.json({ ...layout, plots: plotsResult.rows });
-  } catch (error) {
-    console.error('Error fetching layout:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+    const total = plotsResult.rows[0]?.total_count || 0;
+    const plots = plotsResult.rows.map(({ total_count, ...rest }) => rest);
 
-router.post('/', authMiddleware, async (req, res) => {
-  try {
+    res.json({
+      ...layout,
+      plots,
+      plotsPagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 }
+    });
+  })
+);
+
+router.post(
+  '/',
+  authMiddleware,
+  [
+    body('name').trim().isLength({ min: 2, max: 120 }),
+    body('location').trim().isLength({ min: 2, max: 160 }),
+    body('description').optional({ values: 'falsy' }).isString().isLength({ max: 2000 }),
+    body('cover_image').optional({ values: 'falsy' }).isURL().withMessage('cover_image must be a valid URL')
+  ],
+  validateRequest,
+  asyncHandler(async (req, res) => {
     const { name, location, description, cover_image } = req.body;
 
-    if (!name || !location) {
-      return res.status(400).json({ error: 'Name and location are required' });
-    }
-
     const result = await query(
-      'INSERT INTO layouts (agent_id, name, location, description, cover_image) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      'INSERT INTO layouts (agent_id, name, location, description, cover_image) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [req.agent.id, name, location, description || '', cover_image || '']
     );
 
-    const newId = result.rows[0].id;
-    console.log('Layout created successfully with ID:', newId);
+    res.status(201).json(result.rows[0]);
+  })
+);
 
-    const layoutResult = await query('SELECT * FROM layouts WHERE id = $1', [newId]);
-    res.status(201).json(layoutResult.rows[0]);
-  } catch (error) {
-    console.error('SERVER: Error creating layout:', error);
-    res.status(500).json({ error: error.message || 'Server error' });
-  }
-});
-
-router.put('/:id', authMiddleware, async (req, res) => {
-  try {
+router.put(
+  '/:id',
+  authMiddleware,
+  [
+    param('id').isInt({ min: 1 }),
+    body('name').optional().trim().isLength({ min: 2, max: 120 }),
+    body('location').optional().trim().isLength({ min: 2, max: 160 }),
+    body('description').optional({ values: 'falsy' }).isString().isLength({ max: 2000 }),
+    body('cover_image').optional({ values: 'falsy' }).isURL().withMessage('cover_image must be a valid URL')
+  ],
+  validateRequest,
+  asyncHandler(async (req, res) => {
     const { name, location, description, cover_image } = req.body;
     const layoutId = req.params.id;
 
@@ -89,14 +129,15 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     const layoutResult = await query('SELECT * FROM layouts WHERE id = $1', [layoutId]);
     res.json(layoutResult.rows[0]);
-  } catch (error) {
-    console.error('Error updating layout:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+  })
+);
 
-router.delete('/:id', authMiddleware, async (req, res) => {
-  try {
+router.delete(
+  '/:id',
+  authMiddleware,
+  [param('id').isInt({ min: 1 })],
+  validateRequest,
+  asyncHandler(async (req, res) => {
     const layoutId = req.params.id;
 
     const existingResult = await query('SELECT * FROM layouts WHERE id = $1 AND agent_id = $2', [layoutId, req.agent.id]);
@@ -109,10 +150,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     await query('DELETE FROM layouts WHERE id = $1', [layoutId]);
 
     res.json({ message: 'Layout deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting layout:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+  })
+);
 
 export default router;
