@@ -24,7 +24,7 @@ Access:
 
 ## Metrics exposed by API
 
-- `http_requests_total`
-- `http_request_duration_ms`
-- `http_requests_in_flight`
+- `pnb_http_requests_total`
+- `pnb_http_request_duration_seconds`
+- `pnb_http_requests_in_flight`
 - Node default process/runtime metrics

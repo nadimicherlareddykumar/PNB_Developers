@@ -10,7 +10,7 @@
       "title": "Request Rate",
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total[1m]))",
+          "expr": "sum(rate(pnb_http_requests_total[1m]))",
           "refId": "A"
         }
       ],
@@ -21,7 +21,7 @@
       "title": "5xx Error Rate",
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{status_code=~\"5..\"}[5m]))",
+          "expr": "sum(rate(pnb_http_requests_total{status_code=~\"5..\"}[5m]))",
           "refId": "A"
         }
       ],
@@ -29,10 +29,10 @@
     },
     {
       "type": "timeseries",
-      "title": "P95 Latency (ms)",
+      "title": "P95 Latency (s)",
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_ms_bucket[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(pnb_http_request_duration_seconds_bucket[5m])) by (le))",
           "refId": "A"
         }
       ],
@@ -43,7 +43,7 @@
       "title": "In-flight Requests",
       "targets": [
         {
-          "expr": "http_requests_in_flight",
+          "expr": "pnb_http_requests_in_flight",
           "refId": "A"
         }
       ],

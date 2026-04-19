@@ -5,22 +5,22 @@ const register = new client.Registry();
 client.collectDefaultMetrics({ register, prefix: 'pnb_' });
 
 const httpRequestsTotal = new client.Counter({
-  name: 'http_requests_total',
+  name: 'pnb_http_requests_total',
   help: 'Total number of HTTP requests',
   labelNames: ['method', 'route', 'status_code'],
   registers: [register]
 });
 
-const httpRequestDurationMs = new client.Histogram({
-  name: 'http_request_duration_ms',
-  help: 'Duration of HTTP requests in milliseconds',
+const httpRequestDurationSeconds = new client.Histogram({
+  name: 'pnb_http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
   labelNames: ['method', 'route', 'status_code'],
-  buckets: [10, 25, 50, 100, 250, 500, 1000, 2500, 5000],
+  buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
   registers: [register]
 });
 
 const httpRequestsInFlight = new client.Gauge({
-  name: 'http_requests_in_flight',
+  name: 'pnb_http_requests_in_flight',
   help: 'In-flight HTTP requests',
   registers: [register]
 });
@@ -33,7 +33,7 @@ const resolveRouteLabel = (req) => {
 };
 
 const metricsMiddleware = (req, res, next) => {
-  const end = httpRequestDurationMs.startTimer();
+  const end = httpRequestDurationSeconds.startTimer();
   httpRequestsInFlight.inc();
 
   res.on('finish', () => {
