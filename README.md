@@ -68,6 +68,16 @@ cd server
 npm run seed
 ```
 
+## 📦 Production Deployment Assets
+
+- `DEPLOYMENT_GUIDE.md`
+- `ARCHITECTURE.md`
+- `ENVIRONMENT_SETUP.md`
+- `TROUBLESHOOTING.md`
+- `ROLLBACK_PROCEDURE.md`
+- Docker: `Dockerfile`, `Dockerfile.client`, `docker-compose.yml`, `.dockerignore`
+- CI/CD workflows: `.github/workflows/*.yml`
+- Monitoring: `monitoring/` and `server/middleware/metrics.js`
 
 
 
