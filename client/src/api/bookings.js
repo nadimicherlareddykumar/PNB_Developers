@@ -1,9 +1,9 @@
 import client from './client';
 
-export const getBookings = async (status) => {
-  const params = status ? { status } : {};
-  const response = await client.get('/bookings', { params });
-  return response.data;
+export const getBookings = async (status, params = {}) => {
+  const mergedParams = status ? { ...params, status } : params;
+  const response = await client.get('/bookings', { params: mergedParams });
+  return response.data.items || [];
 };
 
 export const createBooking = async (data) => {

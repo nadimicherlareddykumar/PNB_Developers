@@ -103,6 +103,7 @@ export function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  aria-label="Agent email"
                   className="dark-input w-full bg-black/20 focus:bg-black/40 hover:bg-black/30 transition-colors"
                   placeholder="agent@pnddevelopers.com"
                   required
@@ -114,19 +115,21 @@ export function Login() {
                   Password
                 </label>
                 <div className="relative group">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="dark-input w-full pr-12 bg-black/20 focus:bg-black/40 hover:bg-black/30 transition-colors"
-                    placeholder="Enter password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-accent-rose transition-colors"
-                  >
+                   <input
+                     type={showPassword ? 'text' : 'password'}
+                     value={password}
+                     onChange={(e) => setPassword(e.target.value)}
+                     aria-label="Agent password"
+                     className="dark-input w-full pr-12 bg-black/20 focus:bg-black/40 hover:bg-black/30 transition-colors"
+                     placeholder="Enter password"
+                     required
+                   />
+                   <button
+                     type="button"
+                     onClick={() => setShowPassword(!showPassword)}
+                     aria-label={showPassword ? 'Hide password' : 'Show password'}
+                     className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-accent-rose transition-colors"
+                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>

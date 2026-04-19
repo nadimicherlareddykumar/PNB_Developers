@@ -1,17 +1,61 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { body } from 'express-validator';
 import { query } from '../db/database.js';
+import { authMiddleware } from '../middleware/authMiddleware.js';
+import { validateRequest } from '../middleware/validateRequest.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = express.Router();
 
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
+const getCookieOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000
+});
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+router.post(
+  '/signup',
+  [
+    body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Name is required'),
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('phone').optional({ values: 'falsy' }).trim().isLength({ max: 20 }).withMessage('Phone is too long')
+  ],
+  validateRequest,
+  asyncHandler(async (req, res) => {
+    const { name, email, password, phone } = req.body;
+
+    const existing = await query('SELECT id FROM agents WHERE email = $1', [email]);
+    if (existing.rows[0]) {
+      return res.status(409).json({ error: 'Email already in use' });
     }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const result = await query(
+      'INSERT INTO agents (name, email, password, phone) VALUES ($1, $2, $3, $4) RETURNING id, name, email, phone',
+      [name, email, hashedPassword, phone || null]
+    );
+
+    const agent = result.rows[0];
+    const token = jwt.sign({ id: agent.id, email: agent.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    res.cookie('auth_token', token, getCookieOptions());
+    res.status(201).json({ agent });
+  })
+);
+
+router.post(
+  '/login',
+  [
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('password').isString().notEmpty().withMessage('Password is required')
+  ],
+  validateRequest,
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
 
     const result = await query('SELECT * FROM agents WHERE email = $1', [email]);
     const agent = result.rows[0];
@@ -21,24 +65,25 @@ router.post('/login', async (req, res) => {
     }
 
     const isValidPassword = await bcrypt.compare(password, agent.password);
-
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign(
-      { id: agent.id, email: agent.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const token = jwt.sign({ id: agent.id, email: agent.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const { password: _password, ...agentWithoutPassword } = agent;
 
-    const { password: _, ...agentWithoutPassword } = agent;
+    res.cookie('auth_token', token, getCookieOptions());
+    res.json({ agent: agentWithoutPassword });
+  })
+);
 
-    res.json({ token, agent: agentWithoutPassword });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
+router.post('/logout', (req, res) => {
+  res.clearCookie('auth_token', getCookieOptions());
+  res.json({ message: 'Logged out' });
+});
+
+router.get('/me', authMiddleware, (req, res) => {
+  res.json({ agent: req.agent });
 });
 
 export default router;

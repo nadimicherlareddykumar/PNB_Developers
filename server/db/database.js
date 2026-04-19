@@ -7,13 +7,14 @@ const { Pool } = pg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  max: parseInt(process.env.DB_POOL_MAX || '10', 10),
+  idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT_MS || '30000', 10),
+  connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT_MS || '10000', 10),
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-// Helper: run a query and return the full result object
 const query = (sql, params) => pool.query(sql, params);
 
-// Auto-create tables if they don't exist
 const initTables = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS agents (
@@ -62,19 +63,20 @@ const initTables = async () => {
       status TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
+
+    CREATE INDEX IF NOT EXISTS idx_layouts_agent_id ON layouts(agent_id);
+    CREATE INDEX IF NOT EXISTS idx_plots_layout_id ON plots(layout_id);
+    CREATE INDEX IF NOT EXISTS idx_bookings_layout_id ON bookings(layout_id);
+    CREATE INDEX IF NOT EXISTS idx_bookings_plot_id ON bookings(plot_id);
   `);
-  console.log('Tables ready.');
 };
 
-// Connect and initialize
 pool.connect()
   .then(async (client) => {
-    console.log('Connected to Supabase PostgreSQL');
     client.release();
     await initTables();
   })
-  .catch(err => {
-    console.error('Database connection error:', err.message);
+  .catch(() => {
     process.exit(1);
   });
 

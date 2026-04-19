@@ -1,51 +1,95 @@
 import express from 'express';
-import { query } from '../db/database.js';
+import { body, param } from 'express-validator';
+import pool, { query } from '../db/database.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
+import { validateRequest } from '../middleware/validateRequest.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = express.Router();
 
-router.post('/', authMiddleware, async (req, res) => {
-  try {
+router.post(
+  '/',
+  authMiddleware,
+  [
+    body('layout_id').isInt({ min: 1 }),
+    body('plot_number').trim().isLength({ min: 1, max: 50 }),
+    body('size_sqft').optional().isFloat({ min: 0 }),
+    body('price').optional().isFloat({ min: 0 }),
+    body('facing').optional().isIn(['North', 'South', 'East', 'West']),
+    body('status').optional().isIn(['available', 'booked']),
+    body('grid_x').isInt({ min: 0 }),
+    body('grid_y').isInt({ min: 0 }),
+    body('grid_w').optional().isInt({ min: 1 }),
+    body('grid_h').optional().isInt({ min: 1 })
+  ],
+  validateRequest,
+  asyncHandler(async (req, res) => {
     const { layout_id, plot_number, size_sqft, price, facing, status, grid_x, grid_y, grid_w, grid_h } = req.body;
 
-    if (!layout_id || !plot_number || grid_x === undefined || grid_y === undefined) {
-      return res.status(400).json({ error: 'Layout ID, plot number, grid position are required' });
-    }
-
-    const layoutResult = await query('SELECT * FROM layouts WHERE id = $1', [layout_id]);
+    const layoutResult = await query('SELECT id FROM layouts WHERE id = $1 AND agent_id = $2', [layout_id, req.agent.id]);
     if (!layoutResult.rows[0]) {
       return res.status(404).json({ error: 'Layout not found' });
     }
 
-    const existingPlotResult = await query(
-      'SELECT * FROM plots WHERE layout_id = $1 AND plot_number = $2',
-      [layout_id, plot_number]
-    );
-    if (existingPlotResult.rows[0]) {
-      return res.status(400).json({ error: 'Plot number already exists in this layout' });
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const existingPlotResult = await client.query(
+        'SELECT id FROM plots WHERE layout_id = $1 AND plot_number = $2',
+        [layout_id, plot_number]
+      );
+      if (existingPlotResult.rows[0]) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Plot number already exists in this layout' });
+      }
+
+      const result = await client.query(
+        'INSERT INTO plots (layout_id, plot_number, size_sqft, price, facing, status, grid_x, grid_y, grid_w, grid_h) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id',
+        [layout_id, plot_number, size_sqft || null, price || null, facing || 'North', status || 'available', grid_x, grid_y, grid_w || 1, grid_h || 1]
+      );
+
+      await client.query('UPDATE layouts SET total_plots = total_plots + 1 WHERE id = $1 AND agent_id = $2', [layout_id, req.agent.id]);
+      await client.query('COMMIT');
+
+      const plotResult = await query('SELECT * FROM plots WHERE id = $1', [result.rows[0].id]);
+      res.status(201).json(plotResult.rows[0]);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
+  })
+);
 
-    const result = await query(
-      'INSERT INTO plots (layout_id, plot_number, size_sqft, price, facing, status, grid_x, grid_y, grid_w, grid_h) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id',
-      [layout_id, plot_number, size_sqft || null, price || null, facing || 'North', status || 'available', grid_x, grid_y, grid_w || 1, grid_h || 1]
-    );
-
-    await query('UPDATE layouts SET total_plots = total_plots + 1 WHERE id = $1', [layout_id]);
-
-    const plotResult = await query('SELECT * FROM plots WHERE id = $1', [result.rows[0].id]);
-    res.status(201).json(plotResult.rows[0]);
-  } catch (error) {
-    console.error('Error creating plot:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-router.put('/:id', authMiddleware, async (req, res) => {
-  try {
+router.put(
+  '/:id',
+  authMiddleware,
+  [
+    param('id').isInt({ min: 1 }),
+    body('plot_number').optional().trim().isLength({ min: 1, max: 50 }),
+    body('size_sqft').optional().isFloat({ min: 0 }),
+    body('price').optional().isFloat({ min: 0 }),
+    body('facing').optional().isIn(['North', 'South', 'East', 'West']),
+    body('status').optional().isIn(['available', 'booked']),
+    body('grid_x').optional().isInt({ min: 0 }),
+    body('grid_y').optional().isInt({ min: 0 }),
+    body('grid_w').optional().isInt({ min: 1 }),
+    body('grid_h').optional().isInt({ min: 1 })
+  ],
+  validateRequest,
+  asyncHandler(async (req, res) => {
     const { plot_number, size_sqft, price, facing, status, grid_x, grid_y, grid_w, grid_h } = req.body;
     const plotId = req.params.id;
 
-    const existingResult = await query('SELECT * FROM plots WHERE id = $1', [plotId]);
+    const existingResult = await query(
+      `SELECT p.*
+       FROM plots p
+       JOIN layouts l ON l.id = p.layout_id
+       WHERE p.id = $1 AND l.agent_id = $2`,
+      [plotId, req.agent.id]
+    );
     const existing = existingResult.rows[0];
 
     if (!existing) {
@@ -70,31 +114,44 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     const plotResult = await query('SELECT * FROM plots WHERE id = $1', [plotId]);
     res.json(plotResult.rows[0]);
-  } catch (error) {
-    console.error('Error updating plot:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+  })
+);
 
-router.delete('/:id', authMiddleware, async (req, res) => {
-  try {
+router.delete(
+  '/:id',
+  authMiddleware,
+  [param('id').isInt({ min: 1 })],
+  validateRequest,
+  asyncHandler(async (req, res) => {
     const plotId = req.params.id;
 
-    const existingResult = await query('SELECT * FROM plots WHERE id = $1', [plotId]);
+    const existingResult = await query(
+      `SELECT p.id, p.layout_id
+       FROM plots p
+       JOIN layouts l ON l.id = p.layout_id
+       WHERE p.id = $1 AND l.agent_id = $2`,
+      [plotId, req.agent.id]
+    );
     const existing = existingResult.rows[0];
 
     if (!existing) {
       return res.status(404).json({ error: 'Plot not found' });
     }
 
-    await query('DELETE FROM plots WHERE id = $1', [plotId]);
-    await query('UPDATE layouts SET total_plots = total_plots - 1 WHERE id = $1', [existing.layout_id]);
-
-    res.json({ message: 'Plot deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting plot:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM plots WHERE id = $1', [plotId]);
+      await client.query('UPDATE layouts SET total_plots = GREATEST(total_plots - 1, 0) WHERE id = $1 AND agent_id = $2', [existing.layout_id, req.agent.id]);
+      await client.query('COMMIT');
+      res.json({ message: 'Plot deleted successfully' });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  })
+);
 
 export default router;
