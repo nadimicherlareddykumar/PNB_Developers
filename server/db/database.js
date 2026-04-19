@@ -71,14 +71,17 @@ const initTables = async () => {
   `);
 };
 
-pool.connect()
+const ready = pool.connect()
   .then(async (client) => {
     client.release();
     await initTables();
   })
-  .catch(() => {
+  .catch((error) => {
+    // eslint-disable-next-line no-console
+    console.error('Database initialization failed:', error.message);
     process.exit(1);
   });
 
 export { query };
+export { ready };
 export default pool;

@@ -8,7 +8,7 @@ import csrf from 'csurf';
 
 dotenv.config();
 
-import pool, { query } from './db/database.js';
+import pool, { query, ready } from './db/database.js';
 import logger from './utils/logger.js';
 import authRoutes from './routes/auth.js';
 import layoutRoutes from './routes/layouts.js';
@@ -125,8 +125,8 @@ pool.on('connect', () => {
   logger.info('Database pool connected');
 });
 
-setTimeout(() => {
+ready.then(() => {
   app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
   });
-}, 1500);
+});
