@@ -24,11 +24,7 @@ services:
       - key: SMTP_PASS
         sync: false
       - key: CORS_ORIGIN
-        fromService:
-          type: web
-          name: pnd-frontend
-          property: url
-
+        sync: false # Set this to your frontend URL after it is deployed
   # Frontend Static Site
   - type: web
     name: pnd-frontend
@@ -38,8 +34,4 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: pnd-backend
-          property: url
-        suffix: /api
+        sync: false # Set this to your backend URL + /api after it is deployed
