@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "version": 2,
   "functions": {
     "server/server.js": {
@@ -17,4 +18,11 @@
       "destination": "/client/index.html"
     }
   ]
+=======
+    "version": 2,
+    "rewrites": [
+          { "source": "/api/(.*)", "destination": "/server/server.js" },
+          { "source": "/((?!api/).*)", "destination": "/index.html" }
+    ]
+>>>>>>> b475aff68a946505d8f630474f113cc2581dc6d5
 }
