@@ -1,0 +1,45 @@
+services:
+  # Backend Web Service
+  - type: web
+    name: pnd-backend
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false # You will need to fill this in the Render dashboard
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        value: nadimicherlareddykumar@gmail.com
+      - key: SMTP_PASS
+        sync: false # You will need to fill this in the Render dashboard
+      - key: CORS_ORIGIN
+        fromService:
+          type: static
+          name: pnd-frontend
+          property: url
+
+  # Frontend Static Site
+  - type: static
+    name: pnd-frontend
+    runtime: web
+    rootDir: client
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: pnd-backend
+          property: url
+        suffix: /api
