@@ -12,7 +12,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: MONGODB_URI
-        sync: false # You will need to fill this in the Render dashboard
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: SMTP_HOST
@@ -22,20 +22,20 @@ services:
       - key: SMTP_USER
         value: nadimicherlareddykumar@gmail.com
       - key: SMTP_PASS
-        sync: false # You will need to fill this in the Render dashboard
+        sync: false
       - key: CORS_ORIGIN
         fromService:
-          type: static_site
+          type: web
           name: pnd-frontend
           property: url
 
   # Frontend Static Site
-  - type: static_site
+  - type: web
     name: pnd-frontend
-    runtime: web
+    runtime: static
     rootDir: client
     buildCommand: npm install && npm run build
-    publishDir: dist
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
         fromService:
