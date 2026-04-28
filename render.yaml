@@ -25,12 +25,12 @@ services:
         sync: false # You will need to fill this in the Render dashboard
       - key: CORS_ORIGIN
         fromService:
-          type: static
+          type: static_site
           name: pnd-frontend
           property: url
 
   # Frontend Static Site
-  - type: static
+  - type: static_site
     name: pnd-frontend
     runtime: web
     rootDir: client
