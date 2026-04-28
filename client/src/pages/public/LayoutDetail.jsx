@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { MapPin, ArrowLeft } from 'lucide-react';
-import PlotMap from '../../components/PlotMap';
+import PlotMapSVG from '../../components/PlotMapSVG';
 import BookVisitModal from '../../components/BookVisitModal';
 import RevealUp from '../../components/RevealUp';
 import { useLayouts } from '../../hooks/useLayouts';
@@ -95,7 +95,7 @@ export function LayoutDetail() {
         <RevealUp delay={200}>
           <div className="mt-12 glass-card">
             <span className="utility-label text-accent-rose block mb-6">PLOT MAP</span>
-            <PlotMap plots={layout.plots} onPlotClick={handlePlotClick} />
+            <PlotMapSVG plots={layout.plots} onPlotClick={handlePlotClick} mapImage={layout.map_image} />
             <div className="mt-8 flex items-center gap-6 text-[10px] font-[900] tracking-[0.4em]">
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 rounded bg-[rgba(34,197,94,0.3)] border border-accent-green"></span>

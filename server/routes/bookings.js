@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, param, query as queryValidator } from 'express-validator';
-import pool, { query } from '../db/database.js';
+import { Layout, Plot, Booking } from '../models/index.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { sendApprovalEmail } from '../utils/email.js';
 import { validateRequest } from '../middleware/validateRequest.js';
@@ -23,18 +23,22 @@ router.post(
   asyncHandler(async (req, res) => {
     const { layout_id, plot_id, customer_name, customer_email, customer_phone, visit_date } = req.body;
 
-    const plotResult = await query('SELECT id, status, layout_id FROM plots WHERE id = $1', [plot_id]);
-    const plot = plotResult.rows[0];
-    if (!plot || plot.status !== 'available' || Number(plot.layout_id) !== Number(layout_id)) {
+    const plot = await Plot.findOne({ id: plot_id, layout_id });
+    if (!plot || plot.status !== 'available') {
       return res.status(400).json({ error: 'Plot not available' });
     }
 
-    const result = await query(
-      'INSERT INTO bookings (layout_id, plot_id, customer_name, customer_email, customer_phone, visit_date) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
-      [layout_id, plot_id, customer_name, customer_email, customer_phone, visit_date]
-    );
+    const booking = new Booking({
+      layout_id,
+      plot_id,
+      customer_name,
+      customer_email,
+      customer_phone,
+      visit_date
+    });
 
-    res.status(201).json(result.rows[0]);
+    await booking.save();
+    res.status(201).json(booking);
   })
 );
 
@@ -51,31 +55,32 @@ router.get(
     const { status } = req.query;
     const { page, limit, offset } = getPagination(req.query);
 
-    let sql = `
-      SELECT
-        b.*,
-        p.plot_number,
-        l.name as layout_name,
-        l.location as layout_location,
-        COUNT(*) OVER()::int AS total_count
-      FROM bookings b
-      JOIN plots p ON b.plot_id = p.id
-      JOIN layouts l ON b.layout_id = l.id
-      WHERE l.agent_id = $1
-    `;
+    const filter = {};
+    if (status) filter.status = status;
 
-    const params = [req.agent.id];
-    if (status) {
-      params.push(status);
-      sql += ` AND b.status = $${params.length}`;
-    }
+    // We need to filter by agent_id. Since we don't have a direct link in Booking, 
+    // we first find all layouts belonging to this agent.
+    const layouts = await Layout.find({ agent_id: req.agent.id }).select('id');
+    const layoutIds = layouts.map(l => l.id);
+    filter.layout_id = { $in: layoutIds };
 
-    params.push(limit, offset);
-    sql += ` ORDER BY b.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`;
+    const total = await Booking.countDocuments(filter);
+    const bookings = await Booking.find(filter)
+      .sort({ created_at: -1 })
+      .skip(offset)
+      .limit(limit);
 
-    const result = await query(sql, params);
-    const total = result.rows[0]?.total_count || 0;
-    const items = result.rows.map(({ total_count, ...rest }) => rest);
+    // Populate extra fields manually to match expected SQL join output
+    const items = await Promise.all(bookings.map(async (b) => {
+      const plot = await Plot.findOne({ id: b.plot_id });
+      const layout = await Layout.findOne({ id: b.layout_id });
+      return {
+        ...b.toObject(),
+        plot_number: plot?.plot_number,
+        layout_name: layout?.name,
+        layout_location: layout?.location
+      };
+    }));
 
     res.json({ items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 } });
   })
@@ -90,59 +95,37 @@ router.put(
     const { status } = req.body;
     const bookingId = req.params.id;
 
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      const bookingResult = await client.query(
-        `SELECT b.*, p.plot_number, l.name as layout_name, l.location, l.agent_id
-         FROM bookings b
-         JOIN plots p ON b.plot_id = p.id
-         JOIN layouts l ON b.layout_id = l.id
-         WHERE b.id = $1
-         FOR UPDATE`,
-        [bookingId]
-      );
-
-      const booking = bookingResult.rows[0];
-      if (!booking || Number(booking.agent_id) !== Number(req.agent.id)) {
-        await client.query('ROLLBACK');
-        return res.status(404).json({ error: 'Booking not found' });
-      }
-
-      await client.query('UPDATE bookings SET status = $1 WHERE id = $2', [status, bookingId]);
-
-      if (status === 'approved') {
-        const plotLock = await client.query('SELECT status FROM plots WHERE id = $1 FOR UPDATE', [booking.plot_id]);
-        if (!plotLock.rows[0] || plotLock.rows[0].status !== 'available') {
-          await client.query('ROLLBACK');
-          return res.status(409).json({ error: 'Plot already booked' });
-        }
-        await client.query('UPDATE plots SET status = $1 WHERE id = $2', ['booked', booking.plot_id]);
-      }
-
-      const updatedResult = await client.query(
-        `SELECT b.*, p.plot_number, l.name as layout_name, l.location
-         FROM bookings b
-         JOIN plots p ON b.plot_id = p.id
-         JOIN layouts l ON b.layout_id = l.id
-         WHERE b.id = $1`,
-        [bookingId]
-      );
-
-      await client.query('COMMIT');
-
-      if (status === 'approved') {
-        await sendApprovalEmail(booking, booking.plot_number, booking.layout_name, booking.location);
-      }
-
-      res.json(updatedResult.rows[0]);
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
+    const booking = await Booking.findOne({ id: bookingId });
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
     }
+
+    const layout = await Layout.findOne({ id: booking.layout_id, agent_id: req.agent.id });
+    if (!layout) {
+      return res.status(404).json({ error: 'Unauthorized' });
+    }
+
+    booking.status = status;
+    await booking.save();
+
+    const plot = await Plot.findOne({ id: booking.plot_id });
+    if (status === 'approved' && plot) {
+      if (plot.status !== 'available') {
+        return res.status(409).json({ error: 'Plot already booked' });
+      }
+      plot.status = 'booked';
+      await plot.save();
+      
+      // Send email
+      await sendApprovalEmail(booking, plot.plot_number, layout.name, layout.location);
+    }
+
+    res.json({
+      ...booking.toObject(),
+      plot_number: plot?.plot_number,
+      layout_name: layout.name,
+      layout_location: layout.location
+    });
   })
 );
 

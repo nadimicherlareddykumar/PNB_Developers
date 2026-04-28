@@ -41,7 +41,7 @@ client.interceptors.response.use(
       }
     }
 
-    if (error.response?.status === 401 && window.location.pathname.startsWith('/agent')) {
+    if (error.response?.status === 401 && window.location.pathname.startsWith('/agent') && window.location.pathname !== '/agent/login') {
       localStorage.removeItem('pnb_agent');
       window.location.href = '/agent/login';
     }

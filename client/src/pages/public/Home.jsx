@@ -79,22 +79,44 @@ export function Home() {
             </motion.div>
           </div>
 
-          <div className="hidden md:flex items-center justify-end pr-[8vw]">
-            <div className="relative">
-              <div className="w-[360px] h-[480px] rounded-2xl overflow-hidden shadow-2xl border border-[rgba(255,255,255,0.1)]">
+          <div className="hidden md:flex items-center justify-end pr-[8vw] relative">
+            {/* Background Image */}
+            <motion.div 
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.8 }}
+              className="absolute right-[220px] top-[40px] z-10"
+            >
+              <div className="w-[280px] h-[380px] rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[rgba(255,255,255,0.05)] grayscale hover:grayscale-0 transition-all duration-700">
                 <img
-                  src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800"
-                  alt="Premium Layout"
-                  className="w-full h-full object-cover"
+                  src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800"
+                  alt="Lakeside Plot"
+                  className="w-full h-full object-cover scale-105 hover:scale-100 transition-transform duration-1000"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+              </div>
+            </motion.div>
+            
+            {/* Foreground Image */}
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+              className="relative z-20 mt-32"
+            >
+              <div className="w-[300px] h-[400px] rounded-2xl overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-[rgba(255,255,255,0.1)] relative group">
+                <img
+                  src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800"
+                  alt="Premium Villa Plot"
+                  className="w-full h-full object-cover scale-100 group-hover:scale-110 transition-transform duration-1000"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-black/20 to-transparent"></div>
                 <div className="absolute bottom-6 left-6 right-6">
-                  <p className="text-white font-bold text-xl uppercase tracking-wider mb-2">Prime Bangalore Layouts</p>
-                  <p className="text-accent-green font-mono text-sm tracking-widest">RERA APPROVED</p>
+                  <p className="text-accent-rose font-mono text-[10px] tracking-widest mb-1">VERIFIED PLOTS</p>
+                  <p className="text-white font-black text-2xl uppercase tracking-wider leading-tight">Ready to<br/>Build</p>
                 </div>
               </div>
-              <FloatingBadge number="12" label="ACTIVE PROJECTS" />
-            </div>
+              
+            </motion.div>
           </div>
         </div>
         

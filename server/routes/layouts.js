@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, param, query as queryValidator } from 'express-validator';
-import { query } from '../db/database.js';
+import { Layout, Plot } from '../models/index.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -18,23 +18,35 @@ router.get(
   asyncHandler(async (req, res) => {
     const { page, limit, offset } = getPagination(req.query);
 
-    const result = await query(
-      `SELECT
-        l.*,
-        (SELECT COUNT(*) FROM plots WHERE layout_id = l.id AND status = 'available') as available_count,
-        (SELECT COUNT(*) FROM plots WHERE layout_id = l.id AND status = 'booked') as booked_count,
-        (SELECT MIN(price) FROM plots WHERE layout_id = l.id AND price IS NOT NULL) as starting_price,
-        (SELECT MIN(size_sqft) FROM plots WHERE layout_id = l.id AND size_sqft IS NOT NULL) as min_size,
-        (SELECT MAX(size_sqft) FROM plots WHERE layout_id = l.id AND size_sqft IS NOT NULL) as max_size,
-        COUNT(*) OVER()::int AS total_count
-      FROM layouts l
-      ORDER BY l.created_at DESC
-      LIMIT $1 OFFSET $2`,
-      [limit, offset]
-    );
+    const total = await Layout.countDocuments();
+    const layouts = await Layout.find()
+      .sort({ created_at: -1 })
+      .skip(offset)
+      .limit(limit);
 
-    const total = result.rows[0]?.total_count || 0;
-    const items = result.rows.map(({ total_count, ...rest }) => rest);
+    // Calculate stats for each layout manually to match expected frontend format
+    const items = await Promise.all(layouts.map(async (l) => {
+      const plots = await Plot.find({ layout_id: l.id });
+      
+      const available_count = plots.filter(p => p.status === 'available').length;
+      const booked_count = plots.filter(p => p.status === 'booked').length;
+      
+      const prices = plots.map(p => p.price).filter(p => p != null);
+      const starting_price = prices.length > 0 ? Math.min(...prices) : null;
+      
+      const sizes = plots.map(p => p.size_sqft).filter(s => s != null);
+      const min_size = sizes.length > 0 ? Math.min(...sizes) : null;
+      const max_size = sizes.length > 0 ? Math.max(...sizes) : null;
+
+      return {
+        ...l.toObject(),
+        available_count,
+        booked_count,
+        starting_price,
+        min_size,
+        max_size
+      };
+    }));
 
     res.json({ items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 } });
   })
@@ -50,28 +62,19 @@ router.get(
   validateRequest,
   asyncHandler(async (req, res) => {
     const { page, limit, offset } = getPagination(req.query);
-
-    const layoutResult = await query('SELECT * FROM layouts WHERE id = $1', [req.params.id]);
-    const layout = layoutResult.rows[0];
-
+    const layout = await Layout.findOne({ id: req.params.id });
     if (!layout) {
       return res.status(404).json({ error: 'Layout not found' });
     }
 
-    const plotsResult = await query(
-      `SELECT *, COUNT(*) OVER()::int AS total_count
-       FROM plots
-       WHERE layout_id = $1
-       ORDER BY grid_y, grid_x
-       LIMIT $2 OFFSET $3`,
-      [req.params.id, limit, offset]
-    );
+    const total = await Plot.countDocuments({ layout_id: layout.id });
+    const plots = await Plot.find({ layout_id: layout.id })
+      .sort({ plot_number: 1 })
+      .skip(offset)
+      .limit(limit);
 
-    const total = plotsResult.rows[0]?.total_count || 0;
-    const plots = plotsResult.rows.map(({ total_count, ...rest }) => rest);
-
-    res.json({
-      ...layout,
+    res.json({ 
+      ...layout.toObject(), 
       plots,
       plotsPagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 }
     });
@@ -82,21 +85,19 @@ router.post(
   '/',
   authMiddleware,
   [
-    body('name').trim().isLength({ min: 2, max: 120 }),
-    body('location').trim().isLength({ min: 2, max: 160 }),
-    body('description').optional({ values: 'falsy' }).isString().isLength({ max: 2000 }),
-    body('cover_image').optional({ values: 'falsy' }).isURL().withMessage('cover_image must be a valid URL')
+    body('name').trim().isLength({ min: 2, max: 100 }),
+    body('location').trim().isLength({ min: 2, max: 200 })
   ],
   validateRequest,
   asyncHandler(async (req, res) => {
-    const { name, location, description, cover_image } = req.body;
-
-    const result = await query(
-      'INSERT INTO layouts (agent_id, name, location, description, cover_image) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [req.agent.id, name, location, description || '', cover_image || '']
-    );
-
-    res.status(201).json(result.rows[0]);
+    const { name, location } = req.body;
+    const layout = new Layout({
+      agent_id: req.agent.id,
+      name,
+      location
+    });
+    await layout.save();
+    res.status(201).json(layout);
   })
 );
 
@@ -105,30 +106,23 @@ router.put(
   authMiddleware,
   [
     param('id').isInt({ min: 1 }),
-    body('name').optional().trim().isLength({ min: 2, max: 120 }),
-    body('location').optional().trim().isLength({ min: 2, max: 160 }),
-    body('description').optional({ values: 'falsy' }).isString().isLength({ max: 2000 }),
-    body('cover_image').optional({ values: 'falsy' }).isURL().withMessage('cover_image must be a valid URL')
+    body('name').optional().trim().isLength({ min: 2, max: 100 }),
+    body('location').optional().trim().isLength({ min: 2, max: 200 })
   ],
   validateRequest,
   asyncHandler(async (req, res) => {
-    const { name, location, description, cover_image } = req.body;
-    const layoutId = req.params.id;
+    const { name, location } = req.body;
+    const layout = await Layout.findOne({ id: req.params.id, agent_id: req.agent.id });
 
-    const existingResult = await query('SELECT * FROM layouts WHERE id = $1 AND agent_id = $2', [layoutId, req.agent.id]);
-    const existing = existingResult.rows[0];
-
-    if (!existing) {
+    if (!layout) {
       return res.status(404).json({ error: 'Layout not found' });
     }
 
-    await query(
-      'UPDATE layouts SET name = $1, location = $2, description = $3, cover_image = $4 WHERE id = $5',
-      [name || existing.name, location || existing.location, description ?? existing.description, cover_image ?? existing.cover_image, layoutId]
-    );
+    if (name) layout.name = name;
+    if (location) layout.location = location;
 
-    const layoutResult = await query('SELECT * FROM layouts WHERE id = $1', [layoutId]);
-    res.json(layoutResult.rows[0]);
+    await layout.save();
+    res.json(layout);
   })
 );
 
@@ -138,18 +132,13 @@ router.delete(
   [param('id').isInt({ min: 1 })],
   validateRequest,
   asyncHandler(async (req, res) => {
-    const layoutId = req.params.id;
-
-    const existingResult = await query('SELECT * FROM layouts WHERE id = $1 AND agent_id = $2', [layoutId, req.agent.id]);
-    const existing = existingResult.rows[0];
-
-    if (!existing) {
+    const layout = await Layout.findOneAndDelete({ id: req.params.id, agent_id: req.agent.id });
+    if (!layout) {
       return res.status(404).json({ error: 'Layout not found' });
     }
-
-    await query('DELETE FROM layouts WHERE id = $1', [layoutId]);
-
-    res.json({ message: 'Layout deleted successfully' });
+    // Delete associated plots
+    await Plot.deleteMany({ layout_id: layout.id });
+    res.json({ message: 'Layout and associated plots deleted' });
   })
 );
 

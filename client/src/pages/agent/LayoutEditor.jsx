@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 
 import Sidebar from '../../components/Sidebar';
-import PlotMap from '../../components/PlotMap';
+import PlotMapSVG from '../../components/PlotMapSVG';
 import RevealUp from '../../components/RevealUp';
 import SkeletonCard from '../../components/SkeletonCard';
 import Toast from '../../components/Toast';
@@ -256,12 +256,13 @@ export default function LayoutEditor() {
               <RevealUp delay={100}>
                 <div className="glass-card p-6 md:p-8">
                   <span className="utility-label text-accent-rose block mb-6">PLOT MAP</span>
-                  <PlotMap
+                  <PlotMapSVG
                     plots={layout.plots || []}
                     isEditor
                     onPlotClick={handlePlotClick}
                     onEmptyCellClick={handleEmptyCellClick}
                     onPlotDelete={handleDeletePlot}
+                    mapImage={layout.map_image}
                   />
                 </div>
               </RevealUp>

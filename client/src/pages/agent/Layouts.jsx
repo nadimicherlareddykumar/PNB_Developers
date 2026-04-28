@@ -13,7 +13,7 @@ export function Layouts() {
   const { layouts, create, update, remove } = useLayouts();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLayout, setEditingLayout] = useState(null);
-  const [formData, setFormData] = useState({ name: '', location: '', description: '', cover_image: '' });
+  const [formData, setFormData] = useState({ name: '', location: '', description: '', cover_image: '', map_image: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast, showToast, hideToast } = useToast();
   const navigate = useNavigate();
@@ -25,11 +25,12 @@ export function Layouts() {
         name: layout.name,
         location: layout.location,
         description: layout.description || '',
-        cover_image: layout.cover_image || ''
+        cover_image: layout.cover_image || '',
+        map_image: layout.map_image || ''
       });
     } else {
       setEditingLayout(null);
-      setFormData({ name: '', location: '', description: '', cover_image: '' });
+      setFormData({ name: '', location: '', description: '', cover_image: '', map_image: '' });
     }
     setIsModalOpen(true);
   };
@@ -191,6 +192,19 @@ export function Layouts() {
                         type="text"
                         value={formData.cover_image}
                         onChange={(e) => setFormData({ ...formData, cover_image: e.target.value })}
+                        className="dark-input w-full"
+                        placeholder="https://..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-[900] tracking-[0.2em] uppercase text-text-muted mb-2">
+                        Master Plan Image URL
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.map_image}
+                        onChange={(e) => setFormData({ ...formData, map_image: e.target.value })}
                         className="dark-input w-full"
                         placeholder="https://..."
                       />

@@ -1,7 +1,8 @@
-import { query } from './database.js';
+import { query, ready } from './database.js';
 import bcrypt from 'bcryptjs';
 
 const seed = async () => {
+  await ready;
   const existingResult = await query('SELECT id FROM agents WHERE email = $1', ['agent@pnddevelopers.com']);
   
   if (existingResult.rows.length > 0) {

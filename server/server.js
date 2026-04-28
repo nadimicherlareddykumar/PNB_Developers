@@ -5,7 +5,9 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import csrf from 'csurf';
+import dns from 'dns';
 
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 dotenv.config();
 
 import pool, { query, ready } from './db/database.js';
@@ -14,7 +16,6 @@ import authRoutes from './routes/auth.js';
 import layoutRoutes from './routes/layouts.js';
 import plotRoutes from './routes/plots.js';
 import bookingRoutes from './routes/bookings.js';
-import { metricsEndpoint, metricsMiddleware } from './middleware/metrics.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -55,7 +56,7 @@ app.use(cors({
 app.use(helmet());
 app.use(cookieParser());
 app.use(express.json({ limit: '100kb' }));
-app.use(metricsMiddleware);
+
 
 const csrfProtection = csrf({
   cookie: {
@@ -113,18 +114,19 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests. Try again later.' }
 });
 
-app.get('/metrics', metricsEndpoint);
+
 app.get('/api/live', (req, res) => {
   res.json({ status: 'alive', timestamp: new Date().toISOString() });
 });
-app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/layouts', apiLimiter, layoutRoutes);
-app.use('/api/plots', apiLimiter, plotRoutes);
-app.use('/api/bookings', apiLimiter, bookingRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/layouts', layoutRoutes);
+app.use('/api/plots', plotRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 const readinessHandler = async (req, res, next) => {
   try {
-    await query('SELECT 1');
+    const isConnected = mongoose.connection.readyState === 1;
+    if (!isConnected) throw new Error('Database not connected');
     res.json({ status: 'ok', database: 'connected', timestamp: new Date().toISOString() });
   } catch (error) {
     next(error);
@@ -150,7 +152,7 @@ pool.on('connect', () => {
   logger.info('Database pool connected');
 });
 
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+if (process.env.NODE_ENV !== 'production') {
   ready.then(() => {
     app.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);

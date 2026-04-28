@@ -2,7 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { body } from 'express-validator';
-import { query } from '../db/database.js';
+import { Agent } from '../models/index.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -28,22 +28,32 @@ router.post(
   asyncHandler(async (req, res) => {
     const { name, email, password, phone } = req.body;
 
-    const existing = await query('SELECT id FROM agents WHERE email = $1', [email]);
-    if (existing.rows[0]) {
+    const existing = await Agent.findOne({ email });
+    if (existing) {
       return res.status(409).json({ error: 'Email already in use' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-    const result = await query(
-      'INSERT INTO agents (name, email, password, phone) VALUES ($1, $2, $3, $4) RETURNING id, name, email, phone',
-      [name, email, hashedPassword, phone || null]
-    );
+    const agent = new Agent({
+      name,
+      email,
+      password_hash: hashedPassword,
+      phone: phone || null
+    });
+    
+    await agent.save();
 
-    const agent = result.rows[0];
     const token = jwt.sign({ id: agent.id, email: agent.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     res.cookie('auth_token', token, getCookieOptions());
-    res.status(201).json({ agent });
+    res.status(201).json({ 
+      agent: {
+        id: agent.id,
+        name: agent.name,
+        email: agent.email,
+        phone: agent.phone
+      } 
+    });
   })
 );
 
@@ -57,23 +67,27 @@ router.post(
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    const result = await query('SELECT * FROM agents WHERE email = $1', [email]);
-    const agent = result.rows[0];
-
+    const agent = await Agent.findOne({ email });
     if (!agent) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const isValidPassword = await bcrypt.compare(password, agent.password);
+    const isValidPassword = await bcrypt.compare(password, agent.password_hash);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const token = jwt.sign({ id: agent.id, email: agent.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    const { password: _password, ...agentWithoutPassword } = agent;
 
     res.cookie('auth_token', token, getCookieOptions());
-    res.json({ agent: agentWithoutPassword });
+    res.json({ 
+      agent: {
+        id: agent.id,
+        name: agent.name,
+        email: agent.email,
+        phone: agent.phone
+      } 
+    });
   })
 );
 

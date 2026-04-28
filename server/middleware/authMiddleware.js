@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { query } from '../db/database.js';
+import { Agent } from '../models/index.js';
 
 export const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -12,8 +12,7 @@ export const authMiddleware = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const result = await query('SELECT id, name, email, phone FROM agents WHERE id = $1', [decoded.id]);
-    const agent = result.rows[0];
+    const agent = await Agent.findOne({ id: decoded.id }).select('id name email phone');
 
     if (!agent) {
       return res.status(401).json({ error: 'Agent not found' });
