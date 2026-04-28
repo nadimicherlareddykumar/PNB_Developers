@@ -29,6 +29,12 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+console.log('Environment Debug:', {
+  hasMongoURI: !!process.env.MONGODB_URI,
+  nodeEnv: process.env.NODE_ENV,
+  allowedOrigins: allowedOrigins
+});
+
 // Request logging
 app.use((req, res, next) => {
   const start = Date.now();
@@ -45,12 +51,7 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error('CORS not allowed'));
-  },
+  origin: true, // Temporarily allow all for debugging
   credentials: true,
   exposedHeaders: ['x-csrf-token']
 }));
